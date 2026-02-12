@@ -73,7 +73,7 @@ class MutagenPP(PostProcessor):
         "tven": "episode_sort",
     }
 
-    def __init__(self, post_overwrites: bool, bypassed_list: Optional[List]=None, downloader=None, ):
+    def __init__(self, post_overwrites: bool, bypassed_list: Optional[List[str]]=None, downloader=None, ):
         super().__init__(downloader)
         self._post_overwrites = post_overwrites
         self.bypassed_list = bypassed_list or []
@@ -90,8 +90,7 @@ class MutagenPP(PostProcessor):
     
     def _check_tag_bypassed(self, tag: str):
         """returns true if user wants tag to be bypassed"""
-        bypassed_list = self._get_bypassed_list() or []
-        return bool(tag in bypassed_list)
+        return bool(tag in self.bypassed_list)
     
     def _set_date(self, meta: dict, file):
         if not meta.get("date"):
@@ -99,7 +98,7 @@ class MutagenPP(PostProcessor):
               
         date = date_from_str(meta["date"])
         file = self._get_date_for_filetype(file, date)
-        return date, file
+        return file
     
     def _get_date_for_filetype(self, file, date,):
         date_bypassed = self._check_tag_bypassed("date")
@@ -113,6 +112,8 @@ class MutagenPP(PostProcessor):
                 file["date"] = date.strftime(date_string)
             case "MP4":
                 file["\251day"] = date.strftime(date_string)
+            case _:
+                self.report_warning(f"Skipping date tag, unsupported file type {type(file).__name__}")
         return file
 
     def _get_metadata_dict(self, info):
@@ -174,7 +175,7 @@ class MutagenPP(PostProcessor):
             if meta.get(meta_key):
                 file[file_key] = meta[meta_key]
 
-        date, file = self._set_date(meta, file)
+        file = self._set_date(meta, file)
         if meta.get("thumbnail"):
             pic = self._get_flac_pic(meta["thumbnail"])
             file.add_picture(pic)
@@ -188,7 +189,7 @@ class MutagenPP(PostProcessor):
             if meta.get(meta_key):
                 file[file_key] = meta[meta_key]
 
-        date, file = self._set_date(meta, file)
+        file = self._set_date(meta, file)
 
         if meta.get("thumbnail"):
             pic = self._get_flac_pic(meta["thumbnail"])
@@ -209,7 +210,7 @@ class MutagenPP(PostProcessor):
                 else:
                     file[file_key] = id3_class(encoding=id3.Encoding.UTF8, text=meta[meta_key])
 
-        date, file = self._set_date(meta, file)
+        file = self._set_date(meta, file)
 
         if meta.get("thumbnail"):
             file["APIC"] = id3.APIC(
@@ -226,7 +227,7 @@ class MutagenPP(PostProcessor):
             if meta.get(meta_key):
                 file[file_key] = meta[meta_key]
                 
-        date, file = self._set_date(meta, file)
+        file = self._set_date(meta, file)
 
         if meta.get("purl"):
             # https://getmusicbee.com/forum/index.php?topic=39759.0
@@ -298,7 +299,7 @@ class MutagenPP(PostProcessor):
             self._assemble_metadata(f, metadata)
             f.save()
         except Exception as err:
-            self.to_screen(err)
+            self.report_warning(err)
             raise MutagenPostProcessorError("Unable to embed metadata") from err
 
         return [], info

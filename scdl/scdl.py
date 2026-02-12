@@ -484,16 +484,15 @@ def _build_ytdl_params(url: str, scdl_args: SCDLArgs) -> tuple[str, dict, list]:
     if scdl_args.get("original_metadata"):
         params["--embed-metadata"] = False
         params["--embed-thumbnail"] = False
-    elif not scdl_args.get("original_metadata") and not scdl_args.get("only_year"):
-        postprocessors.append((MutagenPP(scdl_args["force_metadata"]), "post_process"))
-    
-    if scdl_args.get("original_metadata") and scdl_args.get("only_year"):
-        logger.error("[scdl] Invalid combination of arguments, cannot use --original-metadata and --only-year together")
-        sys.exit(1)
-        
-    if scdl_args.get("only_year"):
+        if scdl_args.get("only_year"):
+            logger.error("[scdl] Invalid combination of arguments, cannot use --original-metadata and --only-year together")
+            sys.exit(1)
+    elif scdl_args.get("only_year"):
         postprocessors.append((MutagenPP(scdl_args["force_metadata"], bypassed_list=["date"]), "post_process"))
-
+    else:
+        postprocessors.append((MutagenPP(scdl_args["force_metadata"]), "post_process"))
+        
+    
     if scdl_args.get("auth_token"):
         params["--username"] = "oauth"
         params["--password"] = scdl_args.get("auth_token")
