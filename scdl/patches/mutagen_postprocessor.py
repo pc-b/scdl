@@ -5,7 +5,7 @@ import contextlib
 import functools
 import os
 import re
-from typing import ClassVar
+from typing import ClassVar, Optional, List
 
 import mutagen
 from mutagen import (
@@ -73,9 +73,10 @@ class MutagenPP(PostProcessor):
         "tven": "episode_sort",
     }
 
-    def __init__(self, post_overwrites: bool, downloader=None):
+    def __init__(self, post_overwrites: bool, bypassed_list: Optional[List[str]]=None, downloader=None, ):
         super().__init__(downloader)
         self._post_overwrites = post_overwrites
+        self.bypassed_list = bypassed_list or []
 
     def _get_flac_pic(self, thumbnail: dict) -> flac.Picture:
         pic = flac.Picture()
@@ -83,6 +84,37 @@ class MutagenPP(PostProcessor):
         pic.mime = f"image/{thumbnail['type']}"
         pic.type = id3.PictureType.COVER_FRONT
         return pic
+    
+    def _get_bypassed_list(self):
+        return self.bypassed_list
+    
+    def _check_tag_bypassed(self, tag: str):
+        """returns true if user wants tag to be bypassed"""
+        return bool(tag in self.bypassed_list)
+    
+    def _set_date(self, meta: dict, file):
+        if not meta.get("date"):
+            return file
+              
+        date = date_from_str(meta["date"])
+        file = self._get_date_for_filetype(file, date)
+        return file
+    
+    def _get_date_for_filetype(self, file, date,):
+        date_bypassed = self._check_tag_bypassed("date")
+        date_string = "%Y" if date_bypassed else "%Y-%m-%d"
+        match type(file).__name__:
+            case "FLAC":
+                file["date"] = date.strftime(date_string)
+            case "WAV" | "MP3" | "AIFF" | "DSDIFF" | "DSF" | "TrueAudio":
+                file["TDRC"] = id3.TDRC(encoding=id3.Encoding.UTF8, text=date.strftime(date_string))
+            case "OggOpus" | "OggSpeex" | "OggTheora" | "OggVorbis":
+                file["date"] = date.strftime(date_string)
+            case "MP4":
+                file["\251day"] = date.strftime(date_string)
+            case _:
+                self.report_warning(f"Skipping date tag, unsupported file type {type(file).__name__}")
+        return file
 
     def _get_metadata_dict(self, info):
         meta_prefix = "meta"
@@ -143,11 +175,7 @@ class MutagenPP(PostProcessor):
             if meta.get(meta_key):
                 file[file_key] = meta[meta_key]
 
-        if meta.get("date"):
-            # Vorbis uses ISO 8601 format YYYY-MM-DD
-            date = date_from_str(meta["date"])
-            file["date"] = date.strftime("%Y-%m-%d")
-
+        file = self._set_date(meta, file)
         if meta.get("thumbnail"):
             pic = self._get_flac_pic(meta["thumbnail"])
             file.add_picture(pic)
@@ -161,10 +189,7 @@ class MutagenPP(PostProcessor):
             if meta.get(meta_key):
                 file[file_key] = meta[meta_key]
 
-        if meta.get("date"):
-            # Vorbis uses ISO 8601 format YYYY-MM-DD
-            date = date_from_str(meta["date"])
-            file["date"] = date.strftime("%Y-%m-%d")
+        file = self._set_date(meta, file)
 
         if meta.get("thumbnail"):
             pic = self._get_flac_pic(meta["thumbnail"])
@@ -185,10 +210,7 @@ class MutagenPP(PostProcessor):
                 else:
                     file[file_key] = id3_class(encoding=id3.Encoding.UTF8, text=meta[meta_key])
 
-        if meta.get("date"):
-            # ID3 uses ISO 8601 format YYYY-MM-DD
-            date = date_from_str(meta["date"])
-            file["TDRC"] = id3.TDRC(encoding=id3.Encoding.UTF8, text=date.strftime("%Y-%m-%d"))
+        file = self._set_date(meta, file)
 
         if meta.get("thumbnail"):
             file["APIC"] = id3.APIC(
@@ -204,11 +226,8 @@ class MutagenPP(PostProcessor):
         for file_key, meta_key in self._MP4_METADATA.items():
             if meta.get(meta_key):
                 file[file_key] = meta[meta_key]
-
-        if meta.get("date"):
-            # no standard but iTunes uses YYYY-MM-DD format
-            date = date_from_str(meta["date"])
-            file["\251day"] = date.strftime("%Y-%m-%d")
+                
+        file = self._set_date(meta, file)
 
         if meta.get("purl"):
             # https://getmusicbee.com/forum/index.php?topic=39759.0
@@ -280,6 +299,7 @@ class MutagenPP(PostProcessor):
             self._assemble_metadata(f, metadata)
             f.save()
         except Exception as err:
+            self.report_warning(err)
             raise MutagenPostProcessorError("Unable to embed metadata") from err
 
         return [], info

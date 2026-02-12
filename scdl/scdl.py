@@ -9,7 +9,7 @@ Usage:
     [--original-name][--original-metadata][--no-original][--only-original]
     [--name-format <format>][--strict-playlist][--playlist-name-format <format>]
     [--client-id <id>][--auth-token <token>][--overwrite][--no-playlist][--opus]
-    [--add-description][--impersonate <target>][--yt-dlp-args <argstring>]
+    [--add-description][--impersonate <target>][--only-year][--yt-dlp-args <argstring>]
 
     scdl -h | --help
     scdl --version
@@ -70,6 +70,7 @@ Options:
     --add-description               Adds the description to a separate txt file
     --opus                          Prefer downloading opus streams over mp3 streams
     --impersonate [target]          Forward yt-dlp's --impersonate (requires curl_cffi)
+    --only-year                     Sets the year tag to be %yyyy instead of %yyyy-%mm-%dd
     --yt-dlp-args [argstring]       String with custom args to forward to yt-dlp
 """
 
@@ -158,6 +159,7 @@ class SCDLArgs(TypedDict):
     t: bool
     impersonate: str | None
     yt_dlp_args: str
+    only_year: bool
 
 
 __version__ = importlib.metadata.version("scdl")
@@ -482,9 +484,15 @@ def _build_ytdl_params(url: str, scdl_args: SCDLArgs) -> tuple[str, dict, list]:
     if scdl_args.get("original_metadata"):
         params["--embed-metadata"] = False
         params["--embed-thumbnail"] = False
+        if scdl_args.get("only_year"):
+            logger.error("[scdl] Invalid combination of arguments, cannot use --original-metadata and --only-year together")
+            sys.exit(1)
+    elif scdl_args.get("only_year"):
+        postprocessors.append((MutagenPP(scdl_args["force_metadata"], bypassed_list=["date"]), "post_process"))
     else:
         postprocessors.append((MutagenPP(scdl_args["force_metadata"]), "post_process"))
-
+        
+    
     if scdl_args.get("auth_token"):
         params["--username"] = "oauth"
         params["--password"] = scdl_args.get("auth_token")
