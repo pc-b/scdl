@@ -488,7 +488,7 @@ def _build_ytdl_params(url: str, scdl_args: SCDLArgs) -> tuple[str, dict, list]:
         postprocessors.append((MutagenPP(scdl_args["force_metadata"]), "post_process"))
     
     if scdl_args.get("original_metadata") and scdl_args.get("only_year"):
-        logger.error("[scdl] Invalid combination of arguments, cannot use force_metadata and only-year together")
+        logger.error("[scdl] Invalid combination of arguments, cannot use --original-metadata and --only-year together")
         sys.exit(1)
         
     if scdl_args.get("only_year"):

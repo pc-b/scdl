@@ -94,6 +94,9 @@ class MutagenPP(PostProcessor):
         return bool(tag in bypassed_list)
     
     def _set_date(self, meta: dict, file):
+        if not meta.get("date"):
+            return None, file
+              
         date = date_from_str(meta["date"])
         file = self._get_date_for_filetype(file, date)
         return date, file
@@ -105,7 +108,6 @@ class MutagenPP(PostProcessor):
             case "FLAC":
                 file["date"] = date.strftime(date_string)
             case "WAV" | "MP3" | "AIFF" | "DSDIFF" | "DSF" | "TrueAudio":
-                self.to_screen("im in the mp3 hahaaha")
                 file["TDRC"] = id3.TDRC(encoding=id3.Encoding.UTF8, text=date.strftime(date_string))
             case "OggOpus" | "OggSpeex" | "OggTheora" | "OggVorbis":
                 file["date"] = date.strftime(date_string)
