@@ -22,6 +22,15 @@ https://github.com/flyingrub/scdl/wiki/Installation-Instruction
 ## Configuration
 There is a configuration file left in `~/.config/scdl/scdl.cfg`
 
+## Contributing
+TODO:
+
+lint with `ruff check`
+
+type check with `mypy`
+
+run tests with `pytest`
+
 ## Examples:
 ```
 # Download track & repost of the user QUANTA

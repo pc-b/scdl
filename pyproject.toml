@@ -29,6 +29,7 @@ classifiers = [
 
 [dependency-groups]
 dev = [
+    "curl_cffi>=0.14.0",
     "music-tag>=0.4.3",
     "mypy>=1.13.0",
     "pytest>=8.3.4",
