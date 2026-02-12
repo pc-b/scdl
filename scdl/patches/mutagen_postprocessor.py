@@ -94,7 +94,7 @@ class MutagenPP(PostProcessor):
     
     def _set_date(self, meta: dict, file):
         if not meta.get("date"):
-            return None, file
+            return file
               
         date = date_from_str(meta["date"])
         file = self._get_date_for_filetype(file, date)

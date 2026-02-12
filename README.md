@@ -25,6 +25,8 @@ There is a configuration file left in `~/.config/scdl/scdl.cfg`
 ## Contributing
 TODO:
 
+install dev dependencies
+
 lint with `ruff check`
 
 type check with `mypy`
@@ -110,6 +112,7 @@ scdl -l https://soundcloud.com/ihatemyselfbeats/t-1 --impersonate chrome
 --no-playlist                   Skip downloading playlists
 --opus                          Prefer downloading opus streams over mp3 streams
 --impersonate [target]          Forward yt-dlp's --impersonate (requires curl_cffi)
+--only-year                     Sets the year tag to be %yyyy instead of %yyyy-%mm-%dd
 --yt-dlp-args                   String with custom args to forward to yt-dlp
 ```
 

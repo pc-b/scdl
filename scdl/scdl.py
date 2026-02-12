@@ -70,7 +70,7 @@ Options:
     --add-description               Adds the description to a separate txt file
     --opus                          Prefer downloading opus streams over mp3 streams
     --impersonate [target]          Forward yt-dlp's --impersonate (requires curl_cffi)
-    --only-year                     Sets the year tag to be %yyyy% instead of %yyyy-%mm-%dd
+    --only-year                     Sets the year tag to be %yyyy instead of %yyyy-%mm-%dd
     --yt-dlp-args [argstring]       String with custom args to forward to yt-dlp
 """
 
